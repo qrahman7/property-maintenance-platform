@@ -53,6 +53,10 @@ public class MaintenanceRequest {
         this.createdAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
     }
 
+    public void updateStatus(MaintenanceStatus status) {
+        this.status = status;
+    }
+
     public Long getId() { return id; }
     public Unit getUnit() { return unit; }
     public String getDescription() { return description; }

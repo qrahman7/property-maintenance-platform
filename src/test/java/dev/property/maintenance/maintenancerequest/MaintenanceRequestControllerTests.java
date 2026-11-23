@@ -1,6 +1,8 @@
 package dev.property.maintenance.maintenancerequest;
 
 import dev.property.maintenance.maintenancerequest.api.MaintenanceRequestController;
+import dev.property.maintenance.maintenancerequest.api.MaintenanceRequestNotFoundException;
+import dev.property.maintenance.maintenancerequest.dto.UpdateMaintenanceRequestStatusRequest;
 import dev.property.maintenance.maintenancerequest.domain.MaintenanceStatus;
 import dev.property.maintenance.maintenancerequest.domain.ReportedUrgency;
 import dev.property.maintenance.maintenancerequest.dto.CreateMaintenanceRequestRequest;
@@ -25,6 +27,7 @@ import java.util.Optional;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -198,6 +201,54 @@ class MaintenanceRequestControllerTests {
                 .andExpect(jsonPath("$.title").value("Not Found"))
                 .andExpect(jsonPath("$.detail").value("Maintenance request 99 was not found."))
                 .andExpect(jsonPath("$.instance").value("/api/maintenance-requests/99"));
+    }
+
+    @Test
+    void updatesStatus() throws Exception {
+        var request = new UpdateMaintenanceRequestStatusRequest(MaintenanceStatus.IN_PROGRESS);
+        var updated = new MaintenanceRequestResponse(RESPONSE.id(), RESPONSE.unitId(), RESPONSE.unitNumber(),
+                RESPONSE.propertyId(), RESPONSE.description(), RESPONSE.reportedUrgency(),
+                MaintenanceStatus.IN_PROGRESS, RESPONSE.createdAt());
+        given(service.updateStatus(9L, request)).willReturn(updated);
+
+        mvc.perform(patch("/api/maintenance-requests/9/status")
+                        .contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(objectMapper.writeValueAsString(updated)));
+    }
+
+    @Test
+    void updateMissingRequestReturnsProblemDetail() throws Exception {
+        given(service.updateStatus(99L, new UpdateMaintenanceRequestStatusRequest(MaintenanceStatus.IN_PROGRESS)))
+                .willThrow(new MaintenanceRequestNotFoundException(99L));
+
+        mvc.perform(patch("/api/maintenance-requests/99/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"IN_PROGRESS\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").value("Maintenance request 99 was not found."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"status\":null}"})
+    void rejectsMissingOrNullStatus(String request) throws Exception {
+        mvc.perform(patch("/api/maintenance-requests/9/status")
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors[0].field").value("status"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void rejectsInvalidStatusEnum() throws Exception {
+        mvc.perform(patch("/api/maintenance-requests/9/status")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"INVALID\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400));
+        verifyNoInteractions(service);
     }
 
     private void assertValidationProblem(String request, String field) throws Exception {

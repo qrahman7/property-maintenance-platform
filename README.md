@@ -49,6 +49,9 @@ details format as the Property API. All examples below use fictional data.
 - `GET /api/units/{unitId}/maintenance-requests` lists that unit's requests. An
   existing unit with no requests returns `[]`; a missing unit returns `404`.
 - `GET /api/maintenance-requests/{id}` returns a request, or `404` if absent.
+- `PATCH /api/maintenance-requests/{id}/status` accepts `{"status":"IN_PROGRESS"}`
+  and returns the updated request with `200`. Missing requests return `404`;
+  missing, null, or invalid status values return `400`.
 
 Create bodies accept only a non-blank `description` (maximum 2000 characters) and
 `reportedUrgency` (`LOW`, `MEDIUM`, `HIGH`, or `EMERGENCY`). Other body fields are
@@ -65,7 +68,8 @@ and `createdAt` is set by the application. Errors use the existing ProblemDetail
 Responses contain `id`, `unitId`, `unitNumber`, `propertyId`, `description`,
 `reportedUrgency`, `status`, and `createdAt` (an ISO-8601 instant). They contain no
 nested Unit or Property objects. Status values are `OPEN`, `IN_PROGRESS`, `ON_HOLD`,
-`COMPLETED`, and `CANCELLED`; status changes are not implemented yet.
+`COMPLETED`, and `CANCELLED`. Any of these values can be assigned through the status
+endpoint; transition rules are not enforced yet.
 
 ## Local development
 

@@ -1,6 +1,8 @@
 package dev.property.maintenance.maintenancerequest.service;
 
 import dev.property.maintenance.maintenancerequest.domain.MaintenanceRequest;
+import dev.property.maintenance.maintenancerequest.api.MaintenanceRequestNotFoundException;
+import dev.property.maintenance.maintenancerequest.dto.UpdateMaintenanceRequestStatusRequest;
 import dev.property.maintenance.maintenancerequest.dto.CreateMaintenanceRequestRequest;
 import dev.property.maintenance.maintenancerequest.dto.MaintenanceRequestResponse;
 import dev.property.maintenance.maintenancerequest.repository.MaintenanceRequestRepository;
@@ -29,6 +31,14 @@ public class MaintenanceRequestService {
         var unit = unitRepository.findById(unitId).orElseThrow(() -> new UnitNotFoundException(unitId));
         var maintenanceRequest = new MaintenanceRequest(unit, request.description(), request.reportedUrgency());
         return MaintenanceRequestResponse.from(repository.save(maintenanceRequest));
+    }
+
+    @Transactional
+    public MaintenanceRequestResponse updateStatus(Long id, UpdateMaintenanceRequestStatusRequest request) {
+        var maintenanceRequest = repository.findById(id)
+                .orElseThrow(() -> new MaintenanceRequestNotFoundException(id));
+        maintenanceRequest.updateStatus(request.status());
+        return MaintenanceRequestResponse.from(maintenanceRequest);
     }
 
     public List<MaintenanceRequestResponse> findByUnitId(Long unitId) {

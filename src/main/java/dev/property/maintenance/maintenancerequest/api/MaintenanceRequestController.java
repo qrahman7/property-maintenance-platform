@@ -2,11 +2,13 @@ package dev.property.maintenance.maintenancerequest.api;
 
 import dev.property.maintenance.maintenancerequest.dto.CreateMaintenanceRequestRequest;
 import dev.property.maintenance.maintenancerequest.dto.MaintenanceRequestResponse;
+import dev.property.maintenance.maintenancerequest.dto.UpdateMaintenanceRequestStatusRequest;
 import dev.property.maintenance.maintenancerequest.service.MaintenanceRequestService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +41,12 @@ public class MaintenanceRequestController {
     @GetMapping("/units/{unitId}/maintenance-requests")
     public List<MaintenanceRequestResponse> findByUnitId(@PathVariable Long unitId) {
         return service.findByUnitId(unitId);
+    }
+
+    @PatchMapping("/maintenance-requests/{id}/status")
+    public MaintenanceRequestResponse updateStatus(@PathVariable Long id,
+            @Valid @RequestBody UpdateMaintenanceRequestStatusRequest request) {
+        return service.updateStatus(id, request);
     }
 
     @GetMapping("/maintenance-requests/{id}")
